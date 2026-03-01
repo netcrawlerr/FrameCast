@@ -5,4 +5,5 @@
   <Project Path="src/FrameCast.Encoding/FrameCast.Encoding.csproj" Id="0e0f1249-19eb-4d56-9202-466707b4f752" />
   <Project Path="src/FrameCast.Protocol/FrameCast.Protocol.csproj" Id="a9a51e48-1cfc-4e62-85c2-8e269c12f413" />
   <Project Path="src/FrameCast.Transport/FrameCast.Transport.csproj" Id="4d0c1222-20b0-43a6-a9be-b882f1f11794" />
+  <Project Path="tests/FrameCast.DebugTest/FrameCast.DebugTest.csproj" Id="033fee4a-3c88-47da-bc52-8f79a82c08a4" />
 </Solution>
