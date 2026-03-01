@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using FrameCast.Capture.Windows;
 using FrameCast.Encoding;
@@ -20,9 +22,9 @@ class Program
         };
         _ = Task.Run(() => server.StartAsync());
 
-        //  Capture Client
-
-        var client = new TcpFrameClient("127.0.0.1", port);
+        // Capture client
+        string serverIp = GetLocalIpAddress();
+        var client = new TcpFrameClient(serverIp, port);
         await client.StartAsync();
 
         var captureService = new WindowsScreenCaptureService();
@@ -75,5 +77,31 @@ class Program
         await server.StopAsync();
 
         Console.WriteLine("Streaming stopped.");
+    }
+
+    public static string GetLocalIpAddress()
+    {
+        string localIp = "127.0.0.1";
+
+        foreach (var ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+        {
+            if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up)
+                continue;
+
+            var ipProps = ni.GetIPProperties();
+            foreach (var addr in ipProps.UnicastAddresses)
+            {
+                if (
+                    addr.Address.AddressFamily == AddressFamily.InterNetwork
+                    && !IPAddress.IsLoopback(addr.Address)
+                )
+                {
+                    localIp = addr.Address.ToString();
+                    return localIp;
+                }
+            }
+        }
+        Console.WriteLine($"LOCAL-IP: {localIp}");
+        return localIp;
     }
 }
