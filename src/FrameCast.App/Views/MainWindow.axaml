@@ -14,6 +14,15 @@
 		<vm:MainWindowViewModel/>
 	</Design.DataContext>
 
-	<Image Source="{Binding CurrentFrame}"
-           Stretch="Uniform"/>
+	 <Grid RowDefinitions="Auto,*" Margin="10">
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Spacing="10">
+            <TextBox Width="200" Watermark="Server IP" Text="{Binding ServerIp}" />
+            <TextBox Width="100" Watermark="Port" Text="{Binding ServerPort}" />
+            <Button Content="Connect" Command="{Binding ConnectCommand}" />
+        </StackPanel>
+
+        <Border Grid.Row="1" BorderThickness="1" BorderBrush="Gray" CornerRadius="5">
+            <Image Source="{Binding CurrentFrame}" Stretch="Uniform"/>
+        </Border>
+    </Grid>
 </Window>

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using FrameCast.Protocol;
 
@@ -9,7 +10,6 @@ public class TcpFrameServer : IFrameTransport
     private readonly int _port;
     private TcpListener? _listener;
     private bool _running = false;
-
     private readonly List<NetworkStream> _clientStreams = new();
 
     public event Action<FrameMessage>? FrameReceived;
@@ -21,11 +21,12 @@ public class TcpFrameServer : IFrameTransport
 
     public async Task StartAsync()
     {
+        // Listen on all interfaces (LAN + localhost)
         _listener = new TcpListener(IPAddress.Any, _port);
         _listener.Start();
         _running = true;
 
-        Console.WriteLine($"Server started on port {_port}");
+        Console.WriteLine($"Server started on all interfaces on port {_port}");
 
         while (_running)
         {
@@ -35,6 +36,10 @@ public class TcpFrameServer : IFrameTransport
                 var stream = client.GetStream();
                 lock (_clientStreams)
                     _clientStreams.Add(stream);
+
+                Console.WriteLine(
+                    $"New client connected: {((IPEndPoint)client.Client.RemoteEndPoint!).Address}"
+                );
 
                 _ = Task.Run(() => HandleClientAsync(client, stream));
             }
@@ -53,7 +58,6 @@ public class TcpFrameServer : IFrameTransport
         {
             try
             {
-                // Read header
                 int headerRead = 0;
                 while (headerRead < 12)
                 {
@@ -81,10 +85,9 @@ public class TcpFrameServer : IFrameTransport
                     break;
 
                 var frame = new FrameMessage { Timestamp = ts, Data = data };
-
                 FrameReceived?.Invoke(frame);
 
-                // spit to all connected clients
+                // Broadcast to all clients
                 var bytes = frame.ToBytes();
                 lock (_clientStreams)
                 {
@@ -113,6 +116,7 @@ public class TcpFrameServer : IFrameTransport
             _clientStreams.Remove(stream);
         stream.Close();
         client.Close();
+        Console.WriteLine("Client disconnected.");
     }
 
     public Task SendFrameAsync(FrameMessage frame)

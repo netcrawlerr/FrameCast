@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Net.Sockets;
 using FrameCast.Protocol;
 
 namespace FrameCast.Transport;
@@ -31,16 +32,6 @@ public class TcpFrameClient : IFrameTransport
         _ = Task.Run(ReceiveLoop);
     }
 
-    public async Task SendFrameAsync(FrameMessage frame)
-    {
-        if (_stream == null)
-            throw new InvalidOperationException("Client not started");
-
-        var bytes = frame.ToBytes();
-        await _stream.WriteAsync(bytes, 0, bytes.Length);
-        await _stream.FlushAsync();
-    }
-
     private async Task ReceiveLoop()
     {
         if (_stream == null)
@@ -66,7 +57,6 @@ public class TcpFrameClient : IFrameTransport
 
                 var data = new byte[dataLen];
                 int read = 0;
-
                 while (read < dataLen)
                 {
                     int n = await _stream.ReadAsync(data, read, dataLen - read);
@@ -76,7 +66,6 @@ public class TcpFrameClient : IFrameTransport
                 }
 
                 var frame = new FrameMessage { Timestamp = ts, Data = data };
-
                 FrameReceived?.Invoke(frame);
             }
             catch
@@ -84,6 +73,15 @@ public class TcpFrameClient : IFrameTransport
                 break;
             }
         }
+    }
+
+    public Task SendFrameAsync(FrameMessage frame)
+    {
+        if (_stream == null)
+            throw new InvalidOperationException("Client not started");
+
+        var bytes = frame.ToBytes();
+        return _stream.WriteAsync(bytes, 0, bytes.Length);
     }
 
     public Task StopAsync()

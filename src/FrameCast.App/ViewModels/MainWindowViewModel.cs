@@ -19,56 +19,74 @@ public class MainWindowViewModel : INotifyPropertyChanged
         set
         {
             _currentFrame = value;
-            Console.WriteLine("UI: CurrentFrame updated");
+            OnPropertyChanged();
+        }
+    }
+
+    private string _serverIp = "";
+    public string ServerIp
+    {
+        get => _serverIp;
+        set
+        {
+            _serverIp = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private int _serverPort = 5000;
+    public int ServerPort
+    {
+        get => _serverPort;
+        set
+        {
+            _serverPort = value;
             OnPropertyChanged();
         }
     }
 
     private TcpFrameClient? _client;
+    public RelayCommand ConnectCommand { get; }
 
     public MainWindowViewModel()
     {
-        Console.WriteLine("UI: MainWindowViewModel created");
-        _ = ConnectAsync();
+        ConnectCommand = new RelayCommand(async _ => await ConnectAsync());
     }
 
     private async Task ConnectAsync()
     {
         try
         {
-            Console.WriteLine("UI: Connecting to server...");
+            if (_client != null)
+            {
+                await _client.StopAsync();
+                _client = null;
+            }
 
-            _client = new TcpFrameClient("127.0.0.1", 5000);
+            _client = new TcpFrameClient(ServerIp, ServerPort);
             _client.FrameReceived += OnFrameReceived;
 
+            Console.WriteLine($"Connecting to {ServerIp}:{ServerPort}...");
             await _client.StartAsync();
-
-            Console.WriteLine("UI: Connected to server.");
+            Console.WriteLine("Connected.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"UI: Connection error: {ex.Message}");
+            Console.WriteLine($"Connection failed: {ex.Message}");
         }
     }
 
     private void OnFrameReceived(FrameMessage frame)
     {
-        Console.WriteLine($"UI: Frame received ({frame.Data.Length} bytes)");
-
         try
         {
             using var ms = new MemoryStream(frame.Data);
             var bitmap = new Bitmap(ms);
-            Console.WriteLine("UI: Bitmap created");
-
-            Dispatcher.UIThread.Post(() =>
-            {
-                CurrentFrame = bitmap;
-            });
+            Dispatcher.UIThread.Post(() => CurrentFrame = bitmap);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"UI: Bitmap error: {ex.Message}");
+            Console.WriteLine($"Bitmap error: {ex.Message}");
         }
     }
 
