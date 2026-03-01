@@ -9,6 +9,9 @@ public class TcpFrameClient : IFrameTransport
     private readonly int _port;
     private TcpClient? _client;
     private NetworkStream? _stream;
+    private bool _running;
+
+    public event Action<FrameMessage>? FrameReceived;
 
     public TcpFrameClient(string host, int port)
     {
@@ -21,14 +24,11 @@ public class TcpFrameClient : IFrameTransport
         _client = new TcpClient();
         await _client.ConnectAsync(_host, _port);
         _stream = _client.GetStream();
-        Console.WriteLine($"Connected to server {_host}:{_port}");
-    }
+        _running = true;
 
-    public Task StopAsync()
-    {
-        _stream?.Close();
-        _client?.Close();
-        return Task.CompletedTask;
+        Console.WriteLine($"Connected to server {_host}:{_port}");
+
+        _ = Task.Run(ReceiveLoop);
     }
 
     public async Task SendFrameAsync(FrameMessage frame)
@@ -39,5 +39,58 @@ public class TcpFrameClient : IFrameTransport
         var bytes = frame.ToBytes();
         await _stream.WriteAsync(bytes, 0, bytes.Length);
         await _stream.FlushAsync();
+    }
+
+    private async Task ReceiveLoop()
+    {
+        if (_stream == null)
+            return;
+
+        var headerBuffer = new byte[12];
+
+        while (_running)
+        {
+            try
+            {
+                int headerRead = 0;
+                while (headerRead < 12)
+                {
+                    int n = await _stream.ReadAsync(headerBuffer, headerRead, 12 - headerRead);
+                    if (n == 0)
+                        return;
+                    headerRead += n;
+                }
+
+                int dataLen = BitConverter.ToInt32(headerBuffer, 0);
+                long ts = BitConverter.ToInt64(headerBuffer, 4);
+
+                var data = new byte[dataLen];
+                int read = 0;
+
+                while (read < dataLen)
+                {
+                    int n = await _stream.ReadAsync(data, read, dataLen - read);
+                    if (n == 0)
+                        return;
+                    read += n;
+                }
+
+                var frame = new FrameMessage { Timestamp = ts, Data = data };
+
+                FrameReceived?.Invoke(frame);
+            }
+            catch
+            {
+                break;
+            }
+        }
+    }
+
+    public Task StopAsync()
+    {
+        _running = false;
+        _stream?.Close();
+        _client?.Close();
+        return Task.CompletedTask;
     }
 }

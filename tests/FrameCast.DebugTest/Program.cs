@@ -1,4 +1,6 @@
-﻿using FrameCast.Capture.Windows;
+﻿using System;
+using System.Threading.Tasks;
+using FrameCast.Capture.Windows;
 using FrameCast.Encoding;
 using FrameCast.Protocol;
 using FrameCast.Transport;
@@ -9,23 +11,17 @@ class Program
     {
         int port = 5000;
 
-        // ----------------------------
-        // Start TCP Server
-        // ----------------------------
-        var server = new TcpFrameServer(port);
+        //   TCP Server
 
+        var server = new TcpFrameServer(port);
         server.FrameReceived += frame =>
         {
-            var filename = $"received_{frame.Timestamp}.jpg";
-            System.IO.File.WriteAllBytes(filename, frame.Data);
-            Console.WriteLine($"Server: Saved frame {filename}");
+            Console.WriteLine($"Server: Frame {frame.Timestamp} received, broadcasting...");
         };
-
         _ = Task.Run(() => server.StartAsync());
 
-        // ----------------------------
-        // Start TCP Client
-        // ----------------------------
+        //  Capture Client
+
         var client = new TcpFrameClient("127.0.0.1", port);
         await client.StartAsync();
 
@@ -33,6 +29,7 @@ class Program
         var encoder = new JpegFrameEncoder();
 
         Console.WriteLine("Streaming at ~30 FPS...");
+        Console.WriteLine("Run FrameCast.App to view the stream.");
         Console.WriteLine("Press any key to stop.\n");
 
         bool running = true;
@@ -77,7 +74,6 @@ class Program
         await client.StopAsync();
         await server.StopAsync();
 
-        Console.WriteLine("Streaming stopped. Press any key to exit.");
-        Console.ReadKey();
+        Console.WriteLine("Streaming stopped.");
     }
 }

@@ -28,4 +28,9 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FrameCast.Protocol\FrameCast.Protocol.csproj" />
+    <ProjectReference Include="..\FrameCast.Transport\FrameCast.Transport.csproj" />
+  </ItemGroup>
 </Project>

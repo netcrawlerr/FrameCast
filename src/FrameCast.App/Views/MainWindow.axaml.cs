@@ -1,4 +1,5 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
+using FrameCast.App.ViewModels;
 
 namespace FrameCast.App.Views
 {
@@ -7,6 +8,7 @@ namespace FrameCast.App.Views
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = new MainWindowViewModel();
         }
     }
 }

@@ -10,6 +10,8 @@ public class TcpFrameServer : IFrameTransport
     private TcpListener? _listener;
     private bool _running = false;
 
+    private readonly List<NetworkStream> _clientStreams = new();
+
     public event Action<FrameMessage>? FrameReceived;
 
     public TcpFrameServer(int port)
@@ -22,6 +24,7 @@ public class TcpFrameServer : IFrameTransport
         _listener = new TcpListener(IPAddress.Any, _port);
         _listener.Start();
         _running = true;
+
         Console.WriteLine($"Server started on port {_port}");
 
         while (_running)
@@ -29,7 +32,11 @@ public class TcpFrameServer : IFrameTransport
             try
             {
                 var client = await _listener.AcceptTcpClientAsync();
-                _ = HandleClientAsync(client);
+                var stream = client.GetStream();
+                lock (_clientStreams)
+                    _clientStreams.Add(stream);
+
+                _ = Task.Run(() => HandleClientAsync(client, stream));
             }
             catch (Exception ex)
             {
@@ -38,23 +45,15 @@ public class TcpFrameServer : IFrameTransport
         }
     }
 
-    public Task StopAsync()
+    private async Task HandleClientAsync(TcpClient client, NetworkStream stream)
     {
-        _running = false;
-        _listener?.Stop();
-        return Task.CompletedTask;
-    }
-
-    private async Task HandleClientAsync(TcpClient client)
-    {
-        using var stream = client.GetStream();
-        var buffer = new byte[4096];
+        var buffer = new byte[12];
 
         while (_running && client.Connected)
         {
             try
             {
-                // Read the first 12 bytes: DataLength (4) + Timestamp (8)
+                // Read header
                 int headerRead = 0;
                 while (headerRead < 12)
                 {
@@ -84,17 +83,53 @@ public class TcpFrameServer : IFrameTransport
                 var frame = new FrameMessage { Timestamp = ts, Data = data };
 
                 FrameReceived?.Invoke(frame);
+
+                // spit to all connected clients
+                var bytes = frame.ToBytes();
+                lock (_clientStreams)
+                {
+                    foreach (var s in _clientStreams.ToArray())
+                    {
+                        if (!s.CanWrite)
+                            continue;
+                        try
+                        {
+                            s.Write(bytes, 0, bytes.Length);
+                        }
+                        catch
+                        {
+                            _clientStreams.Remove(s);
+                        }
+                    }
+                }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Client handler error: {ex.Message}");
                 break;
             }
         }
+
+        lock (_clientStreams)
+            _clientStreams.Remove(stream);
+        stream.Close();
+        client.Close();
     }
 
     public Task SendFrameAsync(FrameMessage frame)
     {
-        throw new NotImplementedException("Server does not send frames");
+        throw new NotImplementedException("Server does not send frames directly");
+    }
+
+    public Task StopAsync()
+    {
+        _running = false;
+        _listener?.Stop();
+        lock (_clientStreams)
+        {
+            foreach (var s in _clientStreams)
+                s.Close();
+            _clientStreams.Clear();
+        }
+        return Task.CompletedTask;
     }
 }
