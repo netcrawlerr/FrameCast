@@ -1,18 +1,52 @@
-﻿using System.Drawing;
-using FrameCast.Capture.Windows;
+﻿using FrameCast.Capture.Windows;
 using FrameCast.Encoding;
+using FrameCast.Protocol;
+using FrameCast.Transport;
 
-Console.WriteLine("Capturing screen and encoding to JPEG...");
+class Program
+{
+    static async Task Main()
+    {
+        int port = 5000;
 
-// Capture full screen
-var captureService = new WindowsScreenCaptureService();
-using var bitmap = captureService.CaptureFullScreen();
+        var server = new TcpFrameServer(port);
+        server.FrameReceived += frame =>
+        {
+            var filename = $"received_{frame.Timestamp}.jpg";
+            System.IO.File.WriteAllBytes(filename, frame.Data);
+            Console.WriteLine($"Server: Saved frame {filename}");
+        };
 
-// Encode to JPEG
-var encoder = new JpegFrameEncoder(85); // quality
-var jpegBytes = encoder.Encode(bitmap);
+        _ = server.StartAsync();
 
-// Save the encoded JPEG
-File.WriteAllBytes("./outputs/screenshot.jpg", jpegBytes);
+        var client = new TcpFrameClient("127.0.0.1", port);
+        await client.StartAsync();
 
-Console.WriteLine("Screenshot saved as screenshot.jpg");
+        var captureService = new WindowsScreenCaptureService();
+        var encoder = new JpegFrameEncoder();
+
+        for (int i = 0; i < 5; i++)
+        {
+            var bmp = captureService.CaptureFullScreen();
+
+            var jpeg = encoder.Encode(bmp);
+
+            var frame = new FrameMessage
+            {
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                Data = jpeg,
+            };
+
+            await client.SendFrameAsync(frame);
+            Console.WriteLine($"Client: Sent frame {i + 1}");
+
+            await Task.Delay(1000);
+        }
+
+        await client.StopAsync();
+        await server.StopAsync();
+
+        Console.WriteLine("Demo complete. Press any key to exit.");
+        Console.ReadKey();
+    }
+}
