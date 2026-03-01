@@ -3,3 +3,6 @@
 
 /*/*/bin
 /*/*/obj
+
+# test outputs
+/tests/*/outputs
