@@ -11,6 +11,8 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\src\FrameCast.Capture.Windows\FrameCast.Capture.Windows.csproj" />
 	  <ProjectReference Include="..\..\src\FrameCast.Encoding\FrameCast.Encoding.csproj" />
+	  <ProjectReference Include="..\..\src\FrameCast.Protocol\FrameCast.Protocol.csproj" />
+	  <ProjectReference Include="..\..\src\FrameCast.Transport\FrameCast.Transport.csproj" />
 	</ItemGroup>
 
 </Project>

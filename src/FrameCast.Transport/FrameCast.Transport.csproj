@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FrameCast.Protocol\FrameCast.Protocol.csproj" />
+  </ItemGroup>
+
 </Project>
