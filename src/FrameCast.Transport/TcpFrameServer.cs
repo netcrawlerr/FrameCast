@@ -8,25 +8,36 @@ namespace FrameCast.Transport;
 public class TcpFrameServer : IFrameTransport
 {
     private readonly int _port;
+    private readonly string? _ipAddress;
     private TcpListener? _listener;
     private bool _running = false;
     private readonly List<NetworkStream> _clientStreams = new();
 
     public event Action<FrameMessage>? FrameReceived;
 
-    public TcpFrameServer(int port)
+    // accept optional IP
+    public TcpFrameServer(int port, string? ipAddress = null)
     {
         _port = port;
+        _ipAddress = ipAddress;
     }
 
     public async Task StartAsync()
     {
-        // Listen on all interfaces (LAN + localhost)
-        _listener = new TcpListener(IPAddress.Any, _port);
+        IPAddress bindIp = IPAddress.Any;
+        if (
+            !string.IsNullOrWhiteSpace(_ipAddress)
+            && IPAddress.TryParse(_ipAddress, out var parsedIp)
+        )
+        {
+            bindIp = parsedIp;
+        }
+
+        _listener = new TcpListener(bindIp, _port);
         _listener.Start();
         _running = true;
 
-        Console.WriteLine($"Server started on all interfaces on port {_port}");
+        Console.WriteLine($"Server started on {bindIp}:{_port}");
 
         while (_running)
         {

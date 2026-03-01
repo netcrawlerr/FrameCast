@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using FrameCast.Capture.Windows;
@@ -13,9 +14,12 @@ class Program
     {
         int port = 5000;
 
-        //   TCP Server
+        // WLAN IP for  streaming
+        string serverIp = GetWlanIpAddress() ?? "127.0.0.1";
+        Console.WriteLine($"Server IP: {serverIp}");
 
-        var server = new TcpFrameServer(port);
+        // TCP Server
+        var server = new TcpFrameServer(port, serverIp);
         server.FrameReceived += frame =>
         {
             Console.WriteLine($"Server: Frame {frame.Timestamp} received, broadcasting...");
@@ -23,7 +27,6 @@ class Program
         _ = Task.Run(() => server.StartAsync());
 
         // Capture client
-        string serverIp = GetLocalIpAddress();
         var client = new TcpFrameClient(serverIp, port);
         await client.StartAsync();
 
@@ -72,23 +75,23 @@ class Program
         running = false;
 
         await streamingTask;
-
         await client.StopAsync();
         await server.StopAsync();
 
         Console.WriteLine("Streaming stopped.");
     }
 
-    public static string GetLocalIpAddress()
+    public static string? GetWlanIpAddress()
     {
-        string localIp = "127.0.0.1";
-
-        foreach (var ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+        foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
         {
-            if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up)
+            if (
+                nic.NetworkInterfaceType != NetworkInterfaceType.Wireless80211
+                || nic.OperationalStatus != OperationalStatus.Up
+            )
                 continue;
 
-            var ipProps = ni.GetIPProperties();
+            var ipProps = nic.GetIPProperties();
             foreach (var addr in ipProps.UnicastAddresses)
             {
                 if (
@@ -96,12 +99,10 @@ class Program
                     && !IPAddress.IsLoopback(addr.Address)
                 )
                 {
-                    localIp = addr.Address.ToString();
-                    return localIp;
+                    return addr.Address.ToString();
                 }
             }
         }
-        Console.WriteLine($"LOCAL-IP: {localIp}");
-        return localIp;
+        return null; // fallback to localhost
     }
 }
