@@ -9,7 +9,11 @@ class Program
     {
         int port = 5000;
 
+        // ----------------------------
+        // Start TCP Server
+        // ----------------------------
         var server = new TcpFrameServer(port);
+
         server.FrameReceived += frame =>
         {
             var filename = $"received_{frame.Timestamp}.jpg";
@@ -17,36 +21,63 @@ class Program
             Console.WriteLine($"Server: Saved frame {filename}");
         };
 
-        _ = server.StartAsync();
+        _ = Task.Run(() => server.StartAsync());
 
+        // ----------------------------
+        // Start TCP Client
+        // ----------------------------
         var client = new TcpFrameClient("127.0.0.1", port);
         await client.StartAsync();
 
         var captureService = new WindowsScreenCaptureService();
         var encoder = new JpegFrameEncoder();
 
-        for (int i = 0; i < 5; i++)
+        Console.WriteLine("Streaming at ~30 FPS...");
+        Console.WriteLine("Press any key to stop.\n");
+
+        bool running = true;
+
+        var streamingTask = Task.Run(async () =>
         {
-            var bmp = captureService.CaptureFullScreen();
+            var frameDelay = TimeSpan.FromMilliseconds(33); // ~30 FPS
+            int frameCount = 0;
 
-            var jpeg = encoder.Encode(bmp);
-
-            var frame = new FrameMessage
+            while (running)
             {
-                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                Data = jpeg,
-            };
+                try
+                {
+                    var bmp = captureService.CaptureFullScreen();
+                    var jpeg = encoder.Encode(bmp);
 
-            await client.SendFrameAsync(frame);
-            Console.WriteLine($"Client: Sent frame {i + 1}");
+                    var frame = new FrameMessage
+                    {
+                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        Data = jpeg,
+                    };
 
-            await Task.Delay(1000);
-        }
+                    await client.SendFrameAsync(frame);
+
+                    frameCount++;
+                    Console.WriteLine($"Client: Sent frame {frameCount}");
+
+                    await Task.Delay(frameDelay);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Streaming error: {ex.Message}");
+                }
+            }
+        });
+
+        Console.ReadKey();
+        running = false;
+
+        await streamingTask;
 
         await client.StopAsync();
         await server.StopAsync();
 
-        Console.WriteLine("Demo complete. Press any key to exit.");
+        Console.WriteLine("Streaming stopped. Press any key to exit.");
         Console.ReadKey();
     }
 }
