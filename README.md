@@ -1,18 +1,13 @@
 # FrameCast
 
-![.NET](https://img.shields.io/badge/.NET-9.0-purple)
-![Platform](https://img.shields.io/badge/platform-Windows-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-experimental-orange)
-
-**FrameCast** is a real-time LAN screen streaming system built with **.NET**.  
+**FrameCast** is a real-time LAN screen streaming system built with **.NET**.
 It captures the screen, compresses frames using **JPEG**, and streams them through a **local TCP server** to clients connected on the same network.
 
-FrameCast works in a similar spirit to remote desktop tools like **AnyDesk** and **TeamViewer**, but it focuses purely on **screen streaming over a local network** rather than full remote control.
+FrameCast works in a similar spirit to remote desktop tools like AnyDesk and TeamViewer, but it is focused purely on screen streaming over a local network rather than full remote control.
 
 ---
 
-##### Demo (click the image to play the video)
+##### Demo ( click the image to play the video )
 
 [![FrameCast Demo](assets/demo-thumbnail.png)](assets/framecast-demo.mp4)
 
@@ -25,7 +20,7 @@ FrameCast works in a similar spirit to remote desktop tools like **AnyDesk** and
 - TCP-based streaming
 - Local network (LAN) support
 - Multiple client connections
-- Desktop viewer
+- desktop viewer
 
 ---
 
@@ -40,4 +35,44 @@ FrameCast
 ├── FrameCast.Encoding          # JPEG frame compression
 ├── FrameCast.Protocol          # Frame message structure
 ├── FrameCast.Transport         # TCP networking layer
-└── FrameCast.DebugTest         # Streaming server
+└── FrameCast.Server            # Streaming server
+```
+
+---
+
+## How It Works
+
+1. The server captures the screen.
+2. Frames are compressed into JPEG.
+3. Frames are sent over TCP.
+4. The server broadcasts frames to connected clients.
+5. Clients receive and render the stream.
+
+---
+
+## Running the Project
+
+### Start the Streaming Server
+
+```bash
+dotnet run tests/FrameCast.DebugTest
+```
+
+### Start the Viewer
+
+```bash
+dotnet run src/FrameCast.App
+```
+
+Connect using the **server machine's LAN IP**.
+
+Example:
+
+```
+Server IP: 192.168.1.6
+Port: 5000
+```
+
+Both machines must be connected to the **same local network**.
+
+---

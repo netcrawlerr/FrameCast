@@ -51,7 +51,7 @@ FrameCast
 ├── FrameCast.Encoding          # JPEG frame compression
 ├── FrameCast.Protocol          # Frame message structure
 ├── FrameCast.Transport         # TCP networking layer
-└── FrameCast.DebugTest         # Streaming server
+└── FrameCast.Server            # Streaming server
 ```
 
 ---
@@ -138,7 +138,7 @@ Responsibilities:
 
 ---
 
-### FrameCast.DebugTest
+### FrameCast.Server
 
 Used for development and testing.
 
