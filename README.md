@@ -7,9 +7,12 @@ FrameCast works in a similar spirit to remote desktop tools like AnyDesk and Tea
 
 ---
 
-##### Demo ( click the image to play the video )
+### 🎥 Project Demo
 
-[![FrameCast Demo](assets/demo-thumbnail.png)](assets/framecast-demo.mp4)
+[![FrameCast Demo](assets/demo-thumbnail.png)](https://drive.google.com/file/d/181sxsoU_G2I4HV1LTrao4V1R1VJ76_vL/view?usp=sharing)
+
+> [!TIP]
+> **Click the image above** to watch the full demo video
 
 ---
 
