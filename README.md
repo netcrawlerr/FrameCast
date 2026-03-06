@@ -58,7 +58,7 @@ FrameCast
 ### Start the Streaming Server
 
 ```bash
-dotnet run tests/FrameCast.Server
+dotnet run src/FrameCast.Server
 ```
 
 ### Start the Viewer
