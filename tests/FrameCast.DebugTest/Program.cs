@@ -14,8 +14,8 @@ class Program
     {
         int port = 5000;
 
-        // WLAN IP for  streaming
-        string serverIp = GetWlanIpAddress() ?? "127.0.0.1";
+        // IP for  streaming
+        string serverIp = GetStreamingIpAddress() ?? "127.0.0.1";
         Console.WriteLine($"Server IP: {serverIp}");
 
         // TCP Server
@@ -81,28 +81,37 @@ class Program
         Console.WriteLine("Streaming stopped.");
     }
 
-    public static string? GetWlanIpAddress()
+    public static string? GetStreamingIpAddress()
     {
-        foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
-        {
-            if (
-                nic.NetworkInterfaceType != NetworkInterfaceType.Wireless80211
-                || nic.OperationalStatus != OperationalStatus.Up
-            )
-                continue;
+        var interfaces = NetworkInterface.GetAllNetworkInterfaces()
+            .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
+            .ToList();
 
+        // try to find wlan0
+        var wlanIp = GetIpFromInterfaceType(interfaces, NetworkInterfaceType.Wireless80211);
+        if (wlanIp != null) return wlanIp;
+
+        // fallback to Ethernet
+        var ethernetIp = GetIpFromInterfaceType(interfaces, NetworkInterfaceType.Ethernet);
+        if (ethernetIp != null) return ethernetIp;
+
+        return null; // fallback to LH
+    }
+
+    private static string? GetIpFromInterfaceType(IEnumerable<NetworkInterface> interfaces, NetworkInterfaceType type)
+    {
+        foreach (var nic in interfaces.Where(n => n.NetworkInterfaceType == type))
+        {
             var ipProps = nic.GetIPProperties();
             foreach (var addr in ipProps.UnicastAddresses)
             {
-                if (
-                    addr.Address.AddressFamily == AddressFamily.InterNetwork
-                    && !IPAddress.IsLoopback(addr.Address)
-                )
+                if (addr.Address.AddressFamily == AddressFamily.InterNetwork &&
+                    !IPAddress.IsLoopback(addr.Address))
                 {
                     return addr.Address.ToString();
                 }
             }
         }
-        return null; // fallback to localhost
+        return null;
     }
 }
