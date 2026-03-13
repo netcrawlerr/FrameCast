@@ -79,3 +79,7 @@ Port: 5000
 Both machines must be connected to the **same local network**.
 
 ---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
