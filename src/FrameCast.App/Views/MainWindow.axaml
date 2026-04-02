@@ -7,22 +7,105 @@
         Width="1200" Height="700"
         x:Class="FrameCast.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="FrameCast.App">
+        Icon="/Assets/logo.ico"
+        Title="Frame Cast">
 
-	<Design.DataContext>
-		<vm:MainWindowViewModel/>
-	</Design.DataContext>
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
 
-	 <Grid RowDefinitions="Auto,*" Margin="10">
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Spacing="10">
-            <TextBox Width="200" Watermark="Server IP" Text="{Binding ServerIp}" />
-            <TextBox Width="100" Watermark="Port" Text="{Binding ServerPort}" />
-            <Button Content="Connect" Command="{Binding ConnectCommand}" />
-        </StackPanel>
+    <Window.Styles>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#2e201f" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#444444" />
+            <Setter Property="CaretBrush" Value="White" />
+        </Style>
 
-        <Border Grid.Row="1" BorderThickness="1" BorderBrush="Gray" CornerRadius="5">
-            <Image Source="{Binding CurrentFrame}" Stretch="Uniform"/>
+        <Style Selector="TextBox:focus /template/ Border#PART_BorderHost">
+            <Setter Property="Background" Value="#3d2b2a" />
+            <Setter Property="BorderBrush" Value="Gray" />
+        </Style>
+
+        <Style Selector="TextBox:focus /template/ Border#PART_ContentPresenter">
+            <Setter Property="Background" Value="#3d2b2a" />
+            <Setter Property="BorderBrush" Value="Gray" />
+        </Style>
+    </Window.Styles>
+
+    <Grid ColumnDefinitions="Auto, *">
+
+        <ScrollViewer Grid.Column="0"
+                      IsVisible="{Binding IsSidebarOpen}"
+                      ClipToBounds="True"
+                      Padding="10"
+                      Width="200"
+                      Background="#2e201f"
+                      Foreground="White">
+            <StackPanel Spacing="15" Margin="0,0,10,0">
+
+                <StackPanel Spacing="10" IsVisible="{Binding !IsConnected}">
+                    <TextBlock Text="Connection" FontWeight="Bold" FontSize="16" />
+                    <TextBox Watermark="Host IP" Text="{Binding ServerIp}" />
+                    <TextBox Watermark="Port" Text="{Binding ServerPort}" />
+                    <Button Content="Connect" Command="{Binding ConnectCommand}" HorizontalAlignment="Stretch" />
+                </StackPanel>
+
+                <StackPanel Spacing="10" IsVisible="{Binding IsConnected}">
+                    <TextBlock Text="Active Connection" FontWeight="Bold" FontSize="16" />
+                    <TextBlock Text="{Binding ServerIp}" FontSize="12" Opacity="0.7" />
+                    <Button Content="Disconnect"
+                            Command="{Binding DisconnectCommand}"
+                            HorizontalAlignment="Stretch" />
+
+                    <Separator Margin="0,10" />
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Column="1" Background="#1c1312" CornerRadius="8" ClipToBounds="True">
+            <Panel>
+                <Image Source="{Binding CurrentFrame}" Stretch="Uniform" />
+
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            IsVisible="{Binding !IsConnected}"
+                            Spacing="20">
+
+                    <Viewbox Width="100" Height="100" Opacity="0.5">
+                        <Canvas Width="1024" Height="1024">
+                            <Path Fill="#5E676F"
+                                  Data="M372.7 707.8c-17.5-53.6-42.1-80.9-78-108.9-10.6-8.3-21.7-15.6-36-24.2-0.3-0.2-27.8-16.2-35.1-20.8-22.1-14-35.9-26.7-44.5-44.3l-2.9-5.8V343.2c0-46.6 37.5-84.5 84-84.5h84.5V90.2c0-15.5 12.5-28 28.1-28 15.5 0 28.1 12.5 28.1 28v168.5h224.5V90.2c0-15.5 12.5-28 28.1-28 15.5 0 28.1 12.5 28.1 28v168.5h84.5c46.5 0 84 37.7 84 84.5v160.6l-2.9 5.8c-8 16.4-20.8 28.9-40.5 42.5 4.6-3.2-57.9 36.3-75.8 50.7-35.4 28.7-59.7 54.6-77.4 105v56.1s0 28.1-56.1 28.1v168.4H428.8l-0.1-168.4c-56.1 0-56.1-28.1-56.1-28.1v-56.1h0.1z" />
+
+                            <Path Fill="White"
+                                  Data="M428.8 735.9h168.4V703l1.6-4.5c21.3-60.5 53.3-104.3 96.6-139.3 13.3-10.8 26.7-20.1 44-31 4.5-2.8 19.2-11.9 19.2-11.9 6.9-4.3 11.7-7.4 16-10.4 12.4-8.6 16.2-16.7 19.1-22.6V343.2c0-15.9-12.4-28.3-27.8-28.3H260.1c-15.3 0-27.8 12.6-27.8 28.3v140.1c3 6.1 7.2 14.3 21.3 23.2 6.3 4 32.9 19.5 33.9 20.1 16.1 9.6 29 18.2 41.7 28.1 44.6 34.8 77.3 80 98.3 144.5l1.4 4.2v32.5h-0.1z" />
+
+                            <Path Fill="#5E676F"
+                                  Data="M428.8 399.1h168.4v28.1H428.8zM428.8 511.3h168.4v28.1H428.8zM400.7 455.2h224.5v28.1H400.7z" />
+                        </Canvas>
+                    </Viewbox>
+
+                    <TextBlock Text="The Viewer Ready"
+                               Foreground="White"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               TextAlignment="Center" />
+
+                    <TextBlock Text="Connect to a server to start the stream."
+                               Foreground="White"
+                               FontSize="13"
+                               TextAlignment="Center"
+                               Opacity="0.8" />
+                </StackPanel>
+
+                <Button Command="{Binding ToggleSidebarCommand}"
+                        VerticalAlignment="Top" HorizontalAlignment="Left"
+                        Margin="5" Background="Transparent" Padding="10">
+                    <Path Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
+                          Fill="White" Width="15" Height="15" Stretch="Uniform" />
+                </Button>
+            </Panel>
         </Border>
     </Grid>
 </Window>
