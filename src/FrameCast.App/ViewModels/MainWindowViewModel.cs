@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using FrameCast.Protocol;
@@ -12,7 +13,11 @@ namespace FrameCast.App.ViewModels;
 
 public class MainWindowViewModel : INotifyPropertyChanged
 {
+    /// <TODO>
+    /// needs a big refactoring or may be rewriting
+    /// </TODO>
     private Bitmap? _currentFrame;
+
     public Bitmap? CurrentFrame
     {
         get => _currentFrame;
@@ -24,6 +29,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
     }
 
     private string _serverIp = "";
+
     public string ServerIp
     {
         get => _serverIp;
@@ -35,6 +41,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
     }
 
     private int _serverPort = 5000;
+
     public int ServerPort
     {
         get => _serverPort;
@@ -46,11 +53,42 @@ public class MainWindowViewModel : INotifyPropertyChanged
     }
 
     private TcpFrameClient? _client;
+
     public RelayCommand ConnectCommand { get; }
+
+    public RelayCommand DisconnectCommand { get; }
+
+    private bool _isSidebarOpen = true;
+
+    public bool IsSidebarOpen
+    {
+        get => _isSidebarOpen;
+        set
+        {
+            _isSidebarOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public RelayCommand ToggleSidebarCommand { get; }
+
+    private bool _isConnected;
+
+    public bool IsConnected
+    {
+        get => _isConnected;
+        set
+        {
+            _isConnected = value;
+            OnPropertyChanged();
+        }
+    }
 
     public MainWindowViewModel()
     {
         ConnectCommand = new RelayCommand(async _ => await ConnectAsync());
+        ToggleSidebarCommand = new RelayCommand(_ => IsSidebarOpen = !IsSidebarOpen);
+        DisconnectCommand = new RelayCommand(async _ => await DisconnectAsync());
     }
 
     private async Task ConnectAsync()
@@ -61,6 +99,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
             {
                 await _client.StopAsync();
                 _client = null;
+                Dispatcher.UIThread.Post(() => IsConnected = false);
             }
 
             _client = new TcpFrameClient(ServerIp, ServerPort);
@@ -68,11 +107,38 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
             Console.WriteLine($"Connecting to {ServerIp}:{ServerPort}...");
             await _client.StartAsync();
+            Dispatcher.UIThread.Post(() => IsConnected = true);
             Console.WriteLine("Connected.");
         }
         catch (Exception ex)
         {
+            Dispatcher.UIThread.Post(() => IsConnected = false);
             Console.WriteLine($"Connection failed: {ex.Message}");
+        }
+    }
+
+
+    private async Task DisconnectAsync()
+    {
+        try
+        {
+            if (_client != null)
+            {
+                await _client.StopAsync();
+                _client = null;
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                IsConnected = false;
+                CurrentFrame = null; // last frzn frame
+            });
+
+            Console.WriteLine("Disconnected from server.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during disconnect: {ex.Message}");
         }
     }
 
