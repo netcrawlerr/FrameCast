@@ -20,10 +20,6 @@ class Program
 
         // TCP Server
         var server = new TcpFrameServer(port, serverIp);
-        server.FrameReceived += frame =>
-        {
-            Console.WriteLine($"Server: Frame {frame.Timestamp} received, broadcasting...");
-        };
         _ = Task.Run(() => server.StartAsync());
 
         // Capture client
@@ -33,10 +29,7 @@ class Program
         var captureService = new WindowsScreenCaptureService();
         var encoder = new JpegFrameEncoder();
 
-        Console.WriteLine("Streaming at ~30 FPS...");
-        Console.WriteLine("Run FrameCast.App to view the stream.");
-        Console.WriteLine("Press any key to stop.\n");
-
+        Console.WriteLine("System initialized. Waiting for a viewer to connect...");
         bool running = true;
 
         var streamingTask = Task.Run(async () =>
@@ -48,37 +41,43 @@ class Program
             {
                 try
                 {
-                    var bmp = captureService.CaptureFullScreen();
-                    var jpeg = encoder.Encode(bmp);
-
-                    var frame = new FrameMessage
+                    // Check if anyone besides the capture client is connected
+                    if (server.ConnectedClientsCount > 1)
                     {
-                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                        Data = jpeg,
-                    };
+                        var bmp = captureService.CaptureFullScreen();
+                        var jpeg = encoder.Encode(bmp);
 
-                    await client.SendFrameAsync(frame);
+                        var frame = new FrameMessage
+                        {
+                            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                            Data = jpeg,
+                        };
 
-                    frameCount++;
-                    Console.WriteLine($"Client: Sent frame {frameCount}");
+                        await client.SendFrameAsync(frame);
 
-                    await Task.Delay(frameDelay);
+                        frameCount++;
+                        Console.WriteLine($"Streaming: Sent frame {frameCount}");
+                        await Task.Delay(frameDelay);
+                    }
+                    else
+                    {
+                        // Idle mode - save resources
+                        await Task.Delay(1000);
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Streaming error: {ex.Message}");
+                    await Task.Delay(1000);
                 }
             }
         });
 
         Console.ReadKey();
         running = false;
-
         await streamingTask;
         await client.StopAsync();
         await server.StopAsync();
-
-        Console.WriteLine("Streaming stopped.");
     }
 
     public static string? GetStreamingIpAddress()
@@ -105,8 +104,7 @@ class Program
             var ipProps = nic.GetIPProperties();
             foreach (var addr in ipProps.UnicastAddresses)
             {
-                if (addr.Address.AddressFamily == AddressFamily.InterNetwork &&
-                    !IPAddress.IsLoopback(addr.Address))
+                if (addr.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(addr.Address))
                 {
                     return addr.Address.ToString();
                 }

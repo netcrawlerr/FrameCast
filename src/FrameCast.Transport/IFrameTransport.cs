@@ -7,4 +7,5 @@ public interface IFrameTransport
     Task SendFrameAsync(FrameMessage frame);
     Task StartAsync();
     Task StopAsync();
+    int ConnectedClientsCount { get; }
 }

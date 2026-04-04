@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using FrameCast.Protocol;
 
 namespace FrameCast.Transport;
@@ -19,6 +20,7 @@ public class TcpFrameClient : IFrameTransport
         _host = host;
         _port = port;
     }
+    public int ConnectedClientsCount => (_client != null && _client.Connected) ? 1 : 0;
 
     public async Task StartAsync()
     {
